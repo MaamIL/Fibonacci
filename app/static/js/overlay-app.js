@@ -1,4 +1,4 @@
-import { PHI, drawOverlay, eyePoint } from "./spiral.js";
+import { PHI, drawGrids, drawSpiral, eyePoint } from "./spiral.js";
 const $ = (id) => document.getElementById(id);
 const stage = $("stage");
 const canvas = $("canvas");
@@ -11,32 +11,33 @@ const findStatus = $("find-status");
 const matchNav = $("match-nav");
 const matchLabel = $("match-label");
 const edgesInput = $("edges-input");
+const detButtons = ["remove-button", "det-rotate", "det-flip"].map($);
 const HANDLE_HIT = 14;
 const MIN_SIZE = 16;
 const STAGE_PAD = 24;
-const state = { box: { x: 0, y: 0, w: 1, h: 1 }, rotation: 0, flip: false, lock: true, layers: {}, color: "#ffd166", opacity: 0.9, lineWidth: 2 };
+const comp = { layers: {}, golden: true, rotation: 0, flip: false };
+const style = { compColor: "#ffd166", detColor: "#ff5fa2", opacity: 0.9, lineWidth: 2, eye: true, detSquares: true };
+let det = null;
 let image = null;
+let currentFile = null;
 let fileName = "image";
 let scale = 1;
 let drag = null;
-let currentFile = null;
 let matches = [];
 let matchIndex = 0;
 let edgesImage = null;
 let findToken = 0;
-const aspect = () => (state.rotation % 2 === 0 ? PHI : 1 / PHI);
-function fitBox() {
+const fullBox = () => ({ x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight });
+// Largest golden rectangle in the given orientation, centered on the image.
+function goldenFit(rotation, fraction = 1) {
   const iw = image.naturalWidth;
   const ih = image.naturalHeight;
-  if (!state.lock) {
-    state.box = { x: 0, y: 0, w: iw, h: ih };
-    return;
-  }
-  const a = aspect();
-  const w = Math.min(iw, ih * a);
+  const a = rotation % 2 === 0 ? PHI : 1 / PHI;
+  const w = Math.min(iw, ih * a) * fraction;
   const h = w / a;
-  state.box = { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
+  return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
 }
+const compSpiral = () => ({ box: comp.golden ? goldenFit(comp.rotation) : fullBox(), rotation: comp.rotation, flip: comp.flip });
 function resizeCanvas() {
   if (!image) return;
   const maxW = stage.clientWidth - STAGE_PAD * 2;
@@ -48,17 +49,6 @@ function resizeCanvas() {
   canvas.width = Math.round(image.naturalWidth * scale * dpr);
   canvas.height = Math.round(image.naturalHeight * scale * dpr);
   render();
-}
-function render() {
-  if (!image) return;
-  const dpr = window.devicePixelRatio || 1;
-  const view = new DOMMatrix().scale(scale * dpr);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBase(ctx, view);
-  drawOverlay(ctx, view, state, dpr, true);
-  const e = eyePoint(state);
-  eyeInfo.textContent = `Spiral eye at ${((e.x / image.naturalWidth) * 100).toFixed(1)}% × ${((e.y / image.naturalHeight) * 100).toFixed(1)}% of the image.`;
 }
 function drawBase(c, view) {
   c.save();
@@ -72,6 +62,30 @@ function drawBase(c, view) {
   }
   c.restore();
 }
+// `px` is canvas pixels per screen pixel: devicePixelRatio on screen, image pixels per screen pixel when exporting.
+function drawScene(c, view, px, interactive) {
+  drawBase(c, view);
+  const common = { opacity: style.opacity, lineWidth: style.lineWidth, px };
+  drawGrids(c, view, fullBox(), { ...common, color: style.compColor, phi: comp.layers.phi, thirds: comp.layers.thirds });
+  if (comp.layers.spiral || comp.layers.squares)
+    drawSpiral(c, view, compSpiral(), { ...common, color: style.compColor, arcs: comp.layers.spiral, squares: comp.layers.squares, eye: style.eye && comp.layers.spiral });
+  if (det) drawSpiral(c, view, det, { ...common, color: style.detColor, squares: style.detSquares, eye: style.eye, frame: true, handle: interactive });
+}
+function render() {
+  if (!image) return;
+  const dpr = window.devicePixelRatio || 1;
+  drawScene(ctx, new DOMMatrix().scale(scale * dpr), dpr, true);
+  const spiral = det || (comp.layers.spiral ? compSpiral() : null);
+  const e = spiral && eyePoint(spiral);
+  eyeInfo.textContent = e
+    ? `${det ? "Detected" : "Composition"} spiral eye at ${((e.x / image.naturalWidth) * 100).toFixed(1)}% × ${((e.y / image.naturalHeight) * 100).toFixed(1)}% of the image.`
+    : "";
+}
+function setDet(next) {
+  det = next;
+  for (const b of detButtons) b.disabled = !det;
+  render();
+}
 function resetMatches() {
   findToken++;
   matches = [];
@@ -81,19 +95,15 @@ function resetMatches() {
   matchNav.hidden = true;
   findStatus.textContent = "";
   findButton.disabled = !image;
+  $("place-button").disabled = !image;
 }
 const fitWord = (f) => (f >= 0.75 ? "strong" : f >= 0.5 ? "good" : f >= 0.25 ? "fair" : "weak");
 function applyMatch(i) {
   if (!matches.length) return;
   matchIndex = (i + matches.length) % matches.length;
   const m = matches[matchIndex];
-  state.box = { x: m.x, y: m.y, w: m.w, h: m.h };
-  state.rotation = m.rotation;
-  state.flip = m.flip;
-  state.lock = true;
-  $("lock-input").checked = true;
   matchLabel.textContent = `Match ${matchIndex + 1} of ${matches.length} · ${Math.round(m.fit * 100)}% ${fitWord(m.fit)}`;
-  render();
+  setDet({ box: { x: m.x, y: m.y, w: m.w, h: m.h }, rotation: m.rotation, flip: m.flip });
 }
 async function findSpirals() {
   if (!currentFile) return;
@@ -123,6 +133,11 @@ async function findSpirals() {
     if (token === findToken) findButton.disabled = false;
   }
 }
+function placeManually() {
+  if (!image) return;
+  if (matches.length) matchLabel.textContent = "Manual placement";
+  setDet({ box: goldenFit(0, 0.5), rotation: 0, flip: false });
+}
 async function loadFile(file) {
   if (!file || !file.type.startsWith("image/")) return;
   const img = new Image();
@@ -136,12 +151,13 @@ async function loadFile(file) {
   if (image) URL.revokeObjectURL(image.src);
   image = img;
   currentFile = file;
-  resetMatches();
   fileName = file.name.replace(/\.[^.]+$/, "");
   canvas.hidden = false;
   emptyState.hidden = true;
   exportButton.disabled = false;
-  fitBox();
+  resetMatches();
+  det = null;
+  for (const b of detButtons) b.disabled = true;
   resizeCanvas();
 }
 function toImage(e) {
@@ -149,44 +165,27 @@ function toImage(e) {
   return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
 }
 function hitTest(p) {
-  const { x, y, w, h } = state.box;
+  if (!det) return null;
+  const { x, y, w, h } = det.box;
   const tol = HANDLE_HIT / scale;
   if (Math.abs(p.x - (x + w)) <= tol && Math.abs(p.y - (y + h)) <= tol) return "resize";
   if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) return "move";
   return null;
 }
-function scaleBox(factor) {
-  const { x, y, w, h } = state.box;
-  const nw = Math.max(MIN_SIZE, w * factor);
-  const nh = nw * (h / w);
-  state.box = { x: x + (w - nw) / 2, y: y + (h - nh) / 2, w: nw, h: nh };
+function rotateDet() {
+  if (!det) return;
+  const { x, y, w, h } = det.box;
+  setDet({ ...det, rotation: (det.rotation + 1) % 4, box: { x: x + (w - h) / 2, y: y + (h - w) / 2, w: h, h: w } });
 }
-function rotate() {
-  state.rotation = (state.rotation + 1) % 4;
-  if (state.lock) {
-    const { x, y, w, h } = state.box;
-    state.box = { x: x + (w - h) / 2, y: y + (h - w) / 2, w: h, h: w };
-    if (image && (h > image.naturalWidth || w > image.naturalHeight)) fitBox();
-  }
-  render();
-}
-function flip() {
-  state.flip = !state.flip;
-  render();
-}
-function fit() {
-  if (!image) return;
-  fitBox();
-  render();
+function flipDet() {
+  if (det) setDet({ ...det, flip: !det.flip });
 }
 function exportPng() {
   if (!image) return;
   const out = document.createElement("canvas");
   out.width = image.naturalWidth;
   out.height = image.naturalHeight;
-  const octx = out.getContext("2d");
-  drawBase(octx, new DOMMatrix());
-  drawOverlay(octx, new DOMMatrix(), state, 1 / scale, false);
+  drawScene(out.getContext("2d"), new DOMMatrix(), 1 / scale, false);
   out.toBlob((blob) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -200,7 +199,7 @@ canvas.addEventListener("pointerdown", (e) => {
   const mode = hitTest(p);
   if (!mode) return;
   canvas.setPointerCapture(e.pointerId);
-  drag = { mode, start: p, box: { ...state.box } };
+  drag = { mode, start: p, box: { ...det.box } };
 });
 canvas.addEventListener("pointermove", (e) => {
   const p = toImage(e);
@@ -213,11 +212,10 @@ canvas.addEventListener("pointermove", (e) => {
   const dy = p.y - drag.start.y;
   const b = drag.box;
   if (drag.mode === "move") {
-    state.box = { ...b, x: b.x + dx, y: b.y + dy };
+    det.box = { ...b, x: b.x + dx, y: b.y + dy };
   } else {
     const w = Math.max(MIN_SIZE, b.w + dx);
-    const h = state.lock ? w / aspect() : Math.max(MIN_SIZE, b.h + dy);
-    state.box = { ...b, w, h };
+    det.box = { ...b, w, h: w * (b.h / b.w) };
   }
   render();
 });
@@ -225,9 +223,12 @@ const endDrag = () => (drag = null);
 canvas.addEventListener("pointerup", endDrag);
 canvas.addEventListener("pointercancel", endDrag);
 function onWheel(e) {
-  if (!image) return;
+  if (hitTest(toImage(e)) !== "move") return;
   e.preventDefault();
-  scaleBox(e.deltaY < 0 ? 1.05 : 1 / 1.05);
+  const { x, y, w, h } = det.box;
+  const nw = Math.max(MIN_SIZE, w * (e.deltaY < 0 ? 1.05 : 1 / 1.05));
+  const nh = nw * (h / w);
+  det.box = { x: x + (w - nw) / 2, y: y + (h - nh) / 2, w: nw, h: nh };
   render();
 }
 canvas.addEventListener("wheel", onWheel, { passive: false });
@@ -242,48 +243,55 @@ stage.addEventListener("drop", (e) => {
   loadFile(e.dataTransfer.files[0]);
 });
 $("file-input").addEventListener("change", (e) => loadFile(e.target.files[0]));
-for (const input of document.querySelectorAll("[data-layer]")) {
-  state.layers[input.dataset.layer] = input.checked;
+for (const input of document.querySelectorAll("[data-comp]")) {
+  comp.layers[input.dataset.comp] = input.checked;
   input.addEventListener("change", () => {
-    state.layers[input.dataset.layer] = input.checked;
+    comp.layers[input.dataset.comp] = input.checked;
     render();
   });
 }
-$("lock-input").addEventListener("change", (e) => {
-  state.lock = e.target.checked;
-  if (state.lock) {
-    const { x, y, w, h } = state.box;
-    const nh = w / aspect();
-    state.box = { x, y: y + (h - nh) / 2, w, h: nh };
-  }
+$("comp-golden-input").addEventListener("change", (e) => {
+  comp.golden = e.target.checked;
   render();
 });
-$("rotate-button").addEventListener("click", rotate);
-$("flip-button").addEventListener("click", flip);
-$("fit-button").addEventListener("click", fit);
-exportButton.addEventListener("click", exportPng);
+$("comp-rotate").addEventListener("click", () => {
+  comp.rotation = (comp.rotation + 1) % 4;
+  render();
+});
+$("comp-flip").addEventListener("click", () => {
+  comp.flip = !comp.flip;
+  render();
+});
 findButton.addEventListener("click", findSpirals);
 $("prev-match").addEventListener("click", () => applyMatch(matchIndex - 1));
 $("next-match").addEventListener("click", () => applyMatch(matchIndex + 1));
+$("place-button").addEventListener("click", placeManually);
+$("remove-button").addEventListener("click", () => setDet(null));
+$("det-rotate").addEventListener("click", rotateDet);
+$("det-flip").addEventListener("click", flipDet);
+document.querySelector("[data-det=squares]").addEventListener("change", (e) => {
+  style.detSquares = e.target.checked;
+  render();
+});
 edgesInput.addEventListener("change", render);
-$("color-input").addEventListener("input", (e) => {
-  state.color = e.target.value;
-  render();
-});
-$("opacity-input").addEventListener("input", (e) => {
-  state.opacity = Number(e.target.value);
-  render();
-});
-$("width-input").addEventListener("input", (e) => {
-  state.lineWidth = Number(e.target.value);
+exportButton.addEventListener("click", exportPng);
+const styleInputs = { "comp-color-input": ["compColor", String], "det-color-input": ["detColor", String], "opacity-input": ["opacity", Number], "width-input": ["lineWidth", Number] };
+for (const [id, [key, cast]] of Object.entries(styleInputs)) {
+  $(id).addEventListener("input", (e) => {
+    style[key] = cast(e.target.value);
+    render();
+  });
+}
+$("eye-input").addEventListener("change", (e) => {
+  style.eye = e.target.checked;
   render();
 });
 document.addEventListener("keydown", (e) => {
   if (!image || e.target.matches("input[type=number], input[type=text]")) return;
   const key = e.key.toLowerCase();
-  if (key === "r") rotate();
-  else if (key === "f") flip();
-  else if (key === "0") fit();
+  if (key === "r") rotateDet();
+  else if (key === "f") flipDet();
+  else if (key === "delete" || key === "backspace") setDet(null);
   else if (key === "[") applyMatch(matchIndex - 1);
   else if (key === "]") applyMatch(matchIndex + 1);
 });

@@ -25,7 +25,38 @@
           <p class="hint">…or drop an image anywhere on the canvas.</p>
         </section>
         <section class="group">
-          <h2>Auto-find</h2>
+          <h2>Composition · whole image</h2>
+          <label class="toggle">
+            <input type="checkbox" data-comp="phi" checked />
+            <span class="swatch swatch-dash"></span>
+            Phi grid (0.382 / 0.618)
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-comp="thirds" />
+            <span class="swatch swatch-thirds"></span>
+            Rule of thirds
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-comp="spiral" />
+            <span class="swatch swatch-main"></span>
+            Composition spiral
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-comp="squares" />
+            <span class="swatch swatch-soft"></span>
+            Fibonacci squares
+          </label>
+          <label class="toggle">
+            <input id="comp-golden-input" type="checkbox" checked />
+            Keep 1 : 1.618 (off = stretch to image)
+          </label>
+          <div class="button-row">
+            <button id="comp-rotate" type="button" title="Rotate composition spiral 90°">⟳ Rotate</button>
+            <button id="comp-flip" type="button" title="Mirror composition spiral">⇋ Flip</button>
+          </div>
+        </section>
+        <section class="group">
+          <h2>Detected spiral</h2>
           <button id="find-button" type="button" class="wide" disabled>✨ Find spirals in image</button>
           <div id="match-nav" class="match-nav" hidden>
             <button id="prev-match" type="button" title="Previous match ([)">◀</button>
@@ -33,56 +64,33 @@
             <button id="next-match" type="button" title="Next match (])">▶</button>
           </div>
           <p id="find-status" class="hint"></p>
+          <div class="button-row">
+            <button id="place-button" type="button" disabled title="Place a spiral by hand">＋ Place manually</button>
+            <button id="remove-button" type="button" disabled title="Remove detected spiral (Delete)">✕ Remove</button>
+          </div>
+          <div class="button-row">
+            <button id="det-rotate" type="button" disabled title="Rotate 90° (R)">⟳ Rotate</button>
+            <button id="det-flip" type="button" disabled title="Mirror (F)">⇋ Flip</button>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-det="squares" checked />
+            <span class="swatch swatch-det-soft"></span>
+            Fibonacci squares
+          </label>
           <label class="toggle">
             <input id="edges-input" type="checkbox" disabled />
             Show edge map
           </label>
         </section>
         <section class="group">
-          <h2>Layers</h2>
-          <label class="toggle">
-            <input type="checkbox" data-layer="spiral" checked />
-            <span class="swatch swatch-main"></span>
-            Golden spiral
-          </label>
-          <label class="toggle">
-            <input type="checkbox" data-layer="squares" checked />
-            <span class="swatch swatch-soft"></span>
-            Fibonacci squares
-          </label>
-          <label class="toggle">
-            <input type="checkbox" data-layer="phi" />
-            <span class="swatch swatch-dash"></span>
-            Phi grid (0.382 / 0.618)
-          </label>
-          <label class="toggle">
-            <input type="checkbox" data-layer="thirds" />
-            <span class="swatch swatch-thirds"></span>
-            Rule of thirds
-          </label>
-          <label class="toggle">
-            <input type="checkbox" data-layer="eye" checked />
-            <span class="swatch swatch-eye"></span>
-            Spiral eye
-          </label>
-        </section>
-        <section class="group">
-          <h2>Shape</h2>
-          <label class="toggle">
-            <input id="lock-input" type="checkbox" checked />
-            Keep golden ratio (1 : 1.618)
-          </label>
-          <div class="button-row">
-            <button id="rotate-button" type="button" title="Rotate 90° (R)">⟳ Rotate</button>
-            <button id="flip-button" type="button" title="Mirror (F)">⇋ Flip</button>
-            <button id="fit-button" type="button" title="Fit to image (0)">⤢ Fit</button>
-          </div>
-        </section>
-        <section class="group">
           <h2>Style</h2>
           <label class="field">
-            Color
-            <input id="color-input" type="color" value="#ffd166" />
+            Composition color
+            <input id="comp-color-input" type="color" value="#ffd166" />
+          </label>
+          <label class="field">
+            Detected color
+            <input id="det-color-input" type="color" value="#ff5fa2" />
           </label>
           <label class="field">
             Opacity
@@ -92,13 +100,18 @@
             Line width
             <input id="width-input" type="range" min="1" max="8" step="0.5" value="2" />
           </label>
+          <label class="toggle">
+            <input id="eye-input" type="checkbox" checked />
+            <span class="swatch swatch-eye"></span>
+            Spiral eye
+          </label>
         </section>
         <section class="group">
           <button id="export-button" type="button" class="primary" disabled>Download PNG</button>
           <p id="eye-info" class="hint"></p>
         </section>
         <section class="group hint">
-          <p>Drag the frame to move it, drag the corner handle to resize, scroll to scale. Keys: R rotate, F flip, 0 fit.</p>
+          <p>Detected spiral: drag to move, drag the corner handle to resize, scroll to scale. Keys: R rotate, F flip, [ ] browse matches, Delete remove.</p>
         </section>
       </aside>
       <main id="stage" class="stage">

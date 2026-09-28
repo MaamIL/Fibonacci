@@ -11,6 +11,9 @@
   --thirds: #7fdbff;
   --top-bar-h: 3.25rem;
 }
+[hidden] {
+  display: none !important;
+}
 * {
   box-sizing: border-box;
 }
@@ -69,7 +72,7 @@ body {
 }
 .workspace {
   display: grid;
-  grid-template-columns: 17rem 1fr;
+  grid-template-columns: 18.5rem 1fr;
   height: calc(100vh - var(--top-bar-h));
 }
 .panel {
@@ -231,4 +234,8 @@ button:disabled {
   flex: 1;
   font-size: 0.85rem;
   text-align: center;
+}
+.swatch-det-soft {
+  border-top-color: #ff5fa2;
+  opacity: 0.55;
 }
