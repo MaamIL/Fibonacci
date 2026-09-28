@@ -1,0 +1,23 @@
+[project]
+name = "fibonacci-fun"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 200
+target-version = "py312"
+extend-exclude = ["node_modules"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "N"]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+lines-after-imports = -1
+no-lines-before = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 200

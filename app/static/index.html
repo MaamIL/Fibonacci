@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fibonacci Fun</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1>Fibonacci Fun</h1>
+      <form id="seq-form" class="seq-form">
+        <label for="n-input">How many terms?</label>
+        <input id="n-input" type="number" min="1" max="1000" value="10" />
+        <button type="submit">Generate</button>
+      </form>
+      <p id="sequence" class="sequence"></p>
+      <p id="ratio" class="ratio"></p>
+    </main>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #fdf8ef;
+  color: #2b2118;
+}
+.page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+.seq-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.sequence {
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+.ratio {
+  color: #b5651d;
+  font-weight: 600;
+}
