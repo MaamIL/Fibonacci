@@ -24,8 +24,3 @@ Desktop.ini
 # App data
 uploads/
 output/
-#claude
-CLAUDE.md
-CLAUDE.local.md
-.claude/
-.mcp.json
