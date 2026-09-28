@@ -1,9 +1,16 @@
+import mimetypes
 from pathlib import Path
-from fastapi import FastAPI, Query
+from typing import Annotated
+import numpy as np
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from PIL import Image, ImageOps, UnidentifiedImageError
 from app.fib.sequence import fibonacci
+from app.vision.spiral_fit import find_spirals
 
+# The Windows registry may map .js to text/plain, which browsers reject for ES modules.
+mimetypes.add_type("text/javascript", ".js")
 STATIC_DIR = Path(__file__).parent / "static"
 app = FastAPI(title="Fibonacci Fun")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -14,6 +21,11 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/sequence")
+def sequence_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "sequence.html")
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -22,3 +34,13 @@ def health() -> dict:
 @app.get("/api/sequence")
 def sequence(n: int = Query(10, ge=1, le=1000)) -> dict:
     return {"n": n, "sequence": fibonacci(n)}
+
+
+@app.post("/api/find-spiral")
+def find_spiral(file: Annotated[UploadFile, File()]) -> dict:
+    try:
+        # exif_transpose matches the orientation browsers use when drawing the image, so coordinates line up.
+        img = ImageOps.exif_transpose(Image.open(file.file)).convert("L")
+    except (UnidentifiedImageError, OSError) as e:
+        raise HTTPException(status_code=400, detail="Could not read that image.") from e
+    return find_spirals(np.asarray(img))

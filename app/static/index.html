@@ -3,20 +3,112 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fibonacci Fun</title>
+    <title>Golden Spiral · Fibonacci Fun</title>
     <link rel="stylesheet" href="/static/css/style.css" />
   </head>
   <body>
-    <main class="page">
-      <h1>Fibonacci Fun</h1>
-      <form id="seq-form" class="seq-form">
-        <label for="n-input">How many terms?</label>
-        <input id="n-input" type="number" min="1" max="1000" value="10" />
-        <button type="submit">Generate</button>
-      </form>
-      <p id="sequence" class="sequence"></p>
-      <p id="ratio" class="ratio"></p>
-    </main>
-    <script src="/static/js/app.js"></script>
+    <header class="top-bar">
+      <span class="brand">Fibonacci Fun</span>
+      <nav class="nav">
+        <a href="/" aria-current="page">Golden spiral</a>
+        <a href="/sequence">Sequence</a>
+      </nav>
+    </header>
+    <div class="workspace">
+      <aside class="panel">
+        <section class="group">
+          <h2>Image</h2>
+          <label class="button primary file-button">
+            Choose image
+            <input id="file-input" type="file" accept="image/*" hidden />
+          </label>
+          <p class="hint">…or drop an image anywhere on the canvas.</p>
+        </section>
+        <section class="group">
+          <h2>Auto-find</h2>
+          <button id="find-button" type="button" class="wide" disabled>✨ Find spirals in image</button>
+          <div id="match-nav" class="match-nav" hidden>
+            <button id="prev-match" type="button" title="Previous match ([)">◀</button>
+            <span id="match-label" class="match-label"></span>
+            <button id="next-match" type="button" title="Next match (])">▶</button>
+          </div>
+          <p id="find-status" class="hint"></p>
+          <label class="toggle">
+            <input id="edges-input" type="checkbox" disabled />
+            Show edge map
+          </label>
+        </section>
+        <section class="group">
+          <h2>Layers</h2>
+          <label class="toggle">
+            <input type="checkbox" data-layer="spiral" checked />
+            <span class="swatch swatch-main"></span>
+            Golden spiral
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-layer="squares" checked />
+            <span class="swatch swatch-soft"></span>
+            Fibonacci squares
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-layer="phi" />
+            <span class="swatch swatch-dash"></span>
+            Phi grid (0.382 / 0.618)
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-layer="thirds" />
+            <span class="swatch swatch-thirds"></span>
+            Rule of thirds
+          </label>
+          <label class="toggle">
+            <input type="checkbox" data-layer="eye" checked />
+            <span class="swatch swatch-eye"></span>
+            Spiral eye
+          </label>
+        </section>
+        <section class="group">
+          <h2>Shape</h2>
+          <label class="toggle">
+            <input id="lock-input" type="checkbox" checked />
+            Keep golden ratio (1 : 1.618)
+          </label>
+          <div class="button-row">
+            <button id="rotate-button" type="button" title="Rotate 90° (R)">⟳ Rotate</button>
+            <button id="flip-button" type="button" title="Mirror (F)">⇋ Flip</button>
+            <button id="fit-button" type="button" title="Fit to image (0)">⤢ Fit</button>
+          </div>
+        </section>
+        <section class="group">
+          <h2>Style</h2>
+          <label class="field">
+            Color
+            <input id="color-input" type="color" value="#ffd166" />
+          </label>
+          <label class="field">
+            Opacity
+            <input id="opacity-input" type="range" min="0.1" max="1" step="0.05" value="0.9" />
+          </label>
+          <label class="field">
+            Line width
+            <input id="width-input" type="range" min="1" max="8" step="0.5" value="2" />
+          </label>
+        </section>
+        <section class="group">
+          <button id="export-button" type="button" class="primary" disabled>Download PNG</button>
+          <p id="eye-info" class="hint"></p>
+        </section>
+        <section class="group hint">
+          <p>Drag the frame to move it, drag the corner handle to resize, scroll to scale. Keys: R rotate, F flip, 0 fit.</p>
+        </section>
+      </aside>
+      <main id="stage" class="stage">
+        <canvas id="canvas" class="canvas" hidden></canvas>
+        <div id="empty-state" class="empty-state">
+          <p class="empty-title">Drop a photo here</p>
+          <p class="hint">Sunflowers, shells, waves, portraits, architecture: see where the golden spiral lands.</p>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/static/js/overlay-app.js"></script>
   </body>
 </html>
