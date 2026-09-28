@@ -239,3 +239,83 @@ button:disabled {
   border-top-color: #ff5fa2;
   opacity: 0.55;
 }
+.field select {
+  max-width: 11rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.info {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  top: -0.45em;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-left: -0.3rem;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  color: var(--muted);
+  font-family: Georgia, serif;
+  font-size: 0.5rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  cursor: help;
+  user-select: none;
+}
+.info:hover,
+.info:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+}
+.field-name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+}
+.button-row {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.button-row button {
+  flex: 1;
+  padding-inline: 0.5rem;
+  white-space: nowrap;
+}
+.with-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.with-info > :first-child {
+  flex: 1;
+}
+.tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 16rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.4rem;
+  background: #2b2118;
+  color: #fdf8ef;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+.formula {
+  margin: -0.5rem 0 1.25rem;
+  font-family: "Cambria Math", Cambria, Georgia, serif;
+  font-size: 1.4rem;
+  font-style: italic;
+  color: var(--accent);
+}

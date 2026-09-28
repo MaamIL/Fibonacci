@@ -15,7 +15,7 @@ const detButtons = ["remove-button", "det-rotate", "det-flip"].map($);
 const HANDLE_HIT = 14;
 const MIN_SIZE = 16;
 const STAGE_PAD = 24;
-const comp = { layers: {}, golden: true, rotation: 0, flip: false };
+const comp = { layers: {}, frame: "fit", padFill: "blur", rotation: 0, flip: false };
 const style = { compColor: "#ffd166", detColor: "#ff5fa2", opacity: 0.9, lineWidth: 2, eye: true, detSquares: true };
 let det = null;
 let image = null;
@@ -37,22 +37,51 @@ function goldenFit(rotation, fraction = 1) {
   const h = w / a;
   return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
 }
-const compSpiral = () => ({ box: comp.golden ? goldenFit(comp.rotation) : fullBox(), rotation: comp.rotation, flip: comp.flip });
+// Smallest golden rectangle (in the composition orientation) that contains the photo, centered on it; in image coordinates, so x/y may be negative.
+function paddedBox() {
+  const iw = image.naturalWidth;
+  const ih = image.naturalHeight;
+  const a = comp.rotation % 2 === 0 ? PHI : 1 / PHI;
+  const w = iw / ih > a ? iw : ih * a;
+  const h = w / a;
+  return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
+}
+// The frame is what the canvas shows and exports: the photo itself, or the photo plus golden padding.
+const frameBox = () => (comp.frame === "pad" ? paddedBox() : fullBox());
+const compSpiral = () => ({ box: comp.frame === "fit" ? goldenFit(comp.rotation) : frameBox(), rotation: comp.rotation, flip: comp.flip });
+const frameView = (s) => new DOMMatrix().scale(s).translate(-frameBox().x, -frameBox().y);
 function resizeCanvas() {
   if (!image) return;
+  const fb = frameBox();
   const maxW = stage.clientWidth - STAGE_PAD * 2;
   const maxH = stage.clientHeight - STAGE_PAD * 2;
-  scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight);
+  scale = Math.min(maxW / fb.w, maxH / fb.h);
   const dpr = window.devicePixelRatio || 1;
-  canvas.style.width = `${image.naturalWidth * scale}px`;
-  canvas.style.height = `${image.naturalHeight * scale}px`;
-  canvas.width = Math.round(image.naturalWidth * scale * dpr);
-  canvas.height = Math.round(image.naturalHeight * scale * dpr);
+  canvas.style.width = `${fb.w * scale}px`;
+  canvas.style.height = `${fb.h * scale}px`;
+  canvas.width = Math.round(fb.w * scale * dpr);
+  canvas.height = Math.round(fb.h * scale * dpr);
   render();
+}
+function drawPadding(c) {
+  const fb = frameBox();
+  if (comp.padFill !== "blur") {
+    c.fillStyle = comp.padFill;
+    c.fillRect(fb.x, fb.y, fb.w, fb.h);
+    return;
+  }
+  const cover = Math.max(fb.w / image.naturalWidth, fb.h / image.naturalHeight);
+  const w = image.naturalWidth * cover;
+  const h = image.naturalHeight * cover;
+  // Filter lengths are in canvas pixels (unaffected by the transform), so size the blur from the canvas to match on screen and in exports.
+  c.filter = `blur(${Math.round(Math.max(c.canvas.width, c.canvas.height) / 60)}px) brightness(0.8)`;
+  c.drawImage(image, fb.x + (fb.w - w) / 2, fb.y + (fb.h - h) / 2, w, h);
+  c.filter = "none";
 }
 function drawBase(c, view) {
   c.save();
   c.setTransform(view);
+  if (comp.frame === "pad") drawPadding(c);
   c.drawImage(image, 0, 0);
   if (edgesImage && edgesInput.checked) {
     c.fillStyle = "rgba(0, 0, 0, 0.65)";
@@ -66,20 +95,20 @@ function drawBase(c, view) {
 function drawScene(c, view, px, interactive) {
   drawBase(c, view);
   const common = { opacity: style.opacity, lineWidth: style.lineWidth, px };
-  drawGrids(c, view, fullBox(), { ...common, color: style.compColor, phi: comp.layers.phi, thirds: comp.layers.thirds });
-  if (comp.layers.spiral || comp.layers.squares)
-    drawSpiral(c, view, compSpiral(), { ...common, color: style.compColor, arcs: comp.layers.spiral, squares: comp.layers.squares, eye: style.eye && comp.layers.spiral });
+  drawGrids(c, view, frameBox(), { ...common, color: style.compColor, phi: comp.layers.phi, thirds: comp.layers.thirds });
+  const compStyle = { ...common, color: style.compColor, arcs: comp.layers.spiral, squares: comp.layers.squares, eye: style.eye && comp.layers.spiral };
+  if (comp.layers.spiral || comp.layers.squares) drawSpiral(c, view, compSpiral(), compStyle);
   if (det) drawSpiral(c, view, det, { ...common, color: style.detColor, squares: style.detSquares, eye: style.eye, frame: true, handle: interactive });
 }
 function render() {
   if (!image) return;
   const dpr = window.devicePixelRatio || 1;
-  drawScene(ctx, new DOMMatrix().scale(scale * dpr), dpr, true);
+  drawScene(ctx, frameView(scale * dpr), dpr, true);
   const spiral = det || (comp.layers.spiral ? compSpiral() : null);
   const e = spiral && eyePoint(spiral);
-  eyeInfo.textContent = e
-    ? `${det ? "Detected" : "Composition"} spiral eye at ${((e.x / image.naturalWidth) * 100).toFixed(1)}% × ${((e.y / image.naturalHeight) * 100).toFixed(1)}% of the image.`
-    : "";
+  const fb = frameBox();
+  const pct = (v, start, size) => `${(((v - start) / size) * 100).toFixed(1)}%`;
+  eyeInfo.textContent = e ? `${det ? "Detected" : "Composition"} spiral eye at ${pct(e.x, fb.x, fb.w)} × ${pct(e.y, fb.y, fb.h)} of the ${comp.frame === "pad" ? "frame" : "image"}.` : "";
 }
 function setDet(next) {
   det = next;
@@ -162,7 +191,8 @@ async function loadFile(file) {
 }
 function toImage(e) {
   const r = canvas.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+  const fb = frameBox();
+  return { x: (e.clientX - r.left) / scale + fb.x, y: (e.clientY - r.top) / scale + fb.y };
 }
 function hitTest(p) {
   if (!det) return null;
@@ -183,9 +213,10 @@ function flipDet() {
 function exportPng() {
   if (!image) return;
   const out = document.createElement("canvas");
-  out.width = image.naturalWidth;
-  out.height = image.naturalHeight;
-  drawScene(out.getContext("2d"), new DOMMatrix(), 1 / scale, false);
+  const fb = frameBox();
+  out.width = Math.round(fb.w);
+  out.height = Math.round(fb.h);
+  drawScene(out.getContext("2d"), frameView(1), 1 / scale, false);
   out.toBlob((blob) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -250,13 +281,18 @@ for (const input of document.querySelectorAll("[data-comp]")) {
     render();
   });
 }
-$("comp-golden-input").addEventListener("change", (e) => {
-  comp.golden = e.target.checked;
+$("frame-select").addEventListener("change", (e) => {
+  comp.frame = e.target.value;
+  $("pad-fill-field").hidden = comp.frame !== "pad";
+  resizeCanvas();
+});
+$("pad-fill-select").addEventListener("change", (e) => {
+  comp.padFill = e.target.value;
   render();
 });
 $("comp-rotate").addEventListener("click", () => {
   comp.rotation = (comp.rotation + 1) % 4;
-  render();
+  resizeCanvas();
 });
 $("comp-flip").addEventListener("click", () => {
   comp.flip = !comp.flip;

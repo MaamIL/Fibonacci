@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Golden Spiral · Fibonacci Fun</title>
+    <title>Golden Ratio · Fibonacci Fun</title>
     <link rel="stylesheet" href="/static/css/style.css" />
   </head>
   <body>
     <header class="top-bar">
       <span class="brand">Fibonacci Fun</span>
       <nav class="nav">
-        <a href="/" aria-current="page">Golden spiral</a>
+        <a href="/" aria-current="page">Golden Ratio</a>
         <a href="/sequence">Sequence</a>
       </nav>
     </header>
@@ -18,10 +18,13 @@
       <aside class="panel">
         <section class="group">
           <h2>Image</h2>
-          <label class="button primary file-button">
-            Choose image
-            <input id="file-input" type="file" accept="image/*" hidden />
-          </label>
+          <div class="with-info">
+            <label class="button primary file-button">
+              Choose image
+              <input id="file-input" type="file" accept="image/*" hidden />
+            </label>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Pick a photo from your computer. It is only sent to this local app, never online.">i</span>
+          </div>
           <p class="hint">…or drop an image anywhere on the canvas.</p>
         </section>
         <section class="group">
@@ -30,84 +33,189 @@
             <input type="checkbox" data-comp="phi" checked />
             <span class="swatch swatch-dash"></span>
             Phi grid (0.382 / 0.618)
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="Lines at 38.2% and 61.8% of the frame: the golden-ratio cousin of the rule of thirds. Put key subjects on the lines or where they cross.">
+              i
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" data-comp="thirds" />
             <span class="swatch swatch-thirds"></span>
             Rule of thirds
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="The classic photo grid at 1/3 and 2/3, in blue so you can compare it with the phi grid.">i</span>
           </label>
           <label class="toggle">
             <input type="checkbox" data-comp="spiral" />
             <span class="swatch swatch-main"></span>
             Composition spiral
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="A golden spiral over the whole frame. Put the main subject near its eye and let lines in the photo follow the curve.">
+              i
+            </span>
           </label>
           <label class="toggle">
             <input type="checkbox" data-comp="squares" />
             <span class="swatch swatch-soft"></span>
             Fibonacci squares
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="The squares the spiral is built from, sized 1, 1, 2, 3, 5, 8… Each quarter turn of the spiral sits in one square.">
+              i
+            </span>
           </label>
-          <label class="toggle">
-            <input id="comp-golden-input" type="checkbox" checked />
-            Keep 1 : 1.618 (off = stretch to image)
+          <label class="field">
+            <span class="field-name">
+              Frame
+              <span
+                class="info"
+                tabindex="0"
+                role="button"
+                aria-label="More info"
+                data-tip="Fit inside: a true golden spiral centered in the photo; may leave gaps.&#10;Stretch: fills the photo, but the spiral gets squashed.&#10;Pad: adds borders so the whole frame is 1 : 1.618.">
+                i
+              </span>
+            </span>
+            <select id="frame-select">
+              <option value="fit">Fit inside (true golden)</option>
+              <option value="stretch">Stretch to image</option>
+              <option value="pad">Pad to golden</option>
+            </select>
+          </label>
+          <label id="pad-fill-field" class="field" hidden>
+            <span class="field-name">
+              Padding
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="What fills the added borders in Pad mode. It is included in the downloaded PNG.">i</span>
+            </span>
+            <select id="pad-fill-select">
+              <option value="blur">Blurred photo</option>
+              <option value="#000000">Black</option>
+              <option value="#ffffff">White</option>
+            </select>
           </label>
           <div class="button-row">
             <button id="comp-rotate" type="button" title="Rotate composition spiral 90°">⟳ Rotate</button>
             <button id="comp-flip" type="button" title="Mirror composition spiral">⇋ Flip</button>
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="Rotate turns the composition spiral 90°, Flip mirrors it. Try the combinations to see which suits the photo.">
+              i
+            </span>
           </div>
         </section>
         <section class="group">
           <h2>Detected spiral</h2>
-          <button id="find-button" type="button" class="wide" disabled>✨ Find spirals in image</button>
+          <div class="with-info">
+            <button id="find-button" type="button" class="wide" disabled>✨ Find spirals in image</button>
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="Searches the photo for curves that follow a golden spiral, trying every position, size and orientation. Takes a second or two.">
+              i
+            </span>
+          </div>
           <div id="match-nav" class="match-nav" hidden>
             <button id="prev-match" type="button" title="Previous match ([)">◀</button>
             <span id="match-label" class="match-label"></span>
             <button id="next-match" type="button" title="Next match (])">▶</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Browse the top 5 matches. The fit % compares each match with random placements in the same photo.">i</span>
           </div>
           <p id="find-status" class="hint"></p>
           <div class="button-row">
             <button id="place-button" type="button" disabled title="Place a spiral by hand">＋ Place manually</button>
             <button id="remove-button" type="button" disabled title="Remove detected spiral (Delete)">✕ Remove</button>
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="Place manually adds a spiral you drag into position yourself. Remove deletes the detected spiral (Delete key).">
+              i
+            </span>
           </div>
           <div class="button-row">
             <button id="det-rotate" type="button" disabled title="Rotate 90° (R)">⟳ Rotate</button>
             <button id="det-flip" type="button" disabled title="Mirror (F)">⇋ Flip</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Rotate (R) turns the detected spiral 90°, Flip (F) mirrors it. Drag it to move, drag its corner to resize.">
+              i
+            </span>
           </div>
           <label class="toggle">
             <input type="checkbox" data-det="squares" checked />
             <span class="swatch swatch-det-soft"></span>
             Fibonacci squares
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Show the Fibonacci squares inside the detected spiral.">i</span>
           </label>
           <label class="toggle">
             <input id="edges-input" type="checkbox" disabled />
             Show edge map
+            <span
+              class="info"
+              tabindex="0"
+              role="button"
+              aria-label="More info"
+              data-tip="Shows the edges the search looked at. Bright lines are what the spiral tries to follow. Available after Find.">
+              i
+            </span>
           </label>
         </section>
         <section class="group">
           <h2>Style</h2>
           <label class="field">
-            Composition color
+            <span class="field-name">
+              Composition color
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Line color of the grids and the composition spiral.">i</span>
+            </span>
             <input id="comp-color-input" type="color" value="#ffd166" />
           </label>
           <label class="field">
-            Detected color
+            <span class="field-name">
+              Detected color
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Line color of the detected spiral.">i</span>
+            </span>
             <input id="det-color-input" type="color" value="#ff5fa2" />
           </label>
           <label class="field">
-            Opacity
+            <span class="field-name">
+              Opacity
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="How see-through the overlay lines are.">i</span>
+            </span>
             <input id="opacity-input" type="range" min="0.1" max="1" step="0.05" value="0.9" />
           </label>
           <label class="field">
-            Line width
+            <span class="field-name">
+              Line width
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Thickness of the overlay lines, on screen and in the download.">i</span>
+            </span>
             <input id="width-input" type="range" min="1" max="8" step="0.5" value="2" />
           </label>
           <label class="toggle">
             <input id="eye-input" type="checkbox" checked />
             <span class="swatch swatch-eye"></span>
             Spiral eye
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Marks the point the spiral winds into: the natural focal point of the composition.">i</span>
           </label>
         </section>
         <section class="group">
-          <button id="export-button" type="button" class="primary" disabled>Download PNG</button>
+          <div class="with-info">
+            <button id="export-button" type="button" class="primary" disabled>Download PNG</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Saves the photo at full resolution with everything currently shown, except the resize handle.">i</span>
+          </div>
           <p id="eye-info" class="hint"></p>
         </section>
         <section class="group hint">
@@ -122,6 +230,8 @@
         </div>
       </main>
     </div>
+    <script type="module" src="/static/js/tooltip.js"></script>
+    <script type="module" src="/static/js/tooltip.js"></script>
     <script type="module" src="/static/js/overlay-app.js"></script>
   </body>
 </html>
