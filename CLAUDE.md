@@ -20,6 +20,7 @@ A just-for-fun local web app: upload an image and find/trace Fibonacci and golde
 - `app/fib/` pure Fibonacci math, no I/O
 - `app/vision/` OpenCV code: `spiral_fit.py` (auto-find golden and log spirals, POST `/api/find-spiral`), `crop.py` (saliency-based golden crop, POST `/api/golden-crop`)
 - `app/static/` frontend: `index.html` (spiral overlays, `/`), `crop.html` (golden crop, `/crop`), `sequence.html` (`/sequence`), `css/`, `js/`
+- `docs/` `ARCHITECTURE.md` (Mermaid diagrams), `USER_MANUAL.md`, `images/` (README screenshots); `README.md` at the root
 
 ## Commands (PowerShell, from project root)
 
