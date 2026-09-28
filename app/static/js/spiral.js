@@ -25,20 +25,53 @@ export function goldenSteps(count) {
 }
 const DRAW = goldenSteps(14);
 const EYE = goldenSteps(60).eye;
-// Maps the local PHI x 1 rectangle onto the box, honoring 90° rotation steps and mirroring.
-export function localMatrix(box, rotation, flip) {
-  const odd = rotation % 2 === 1;
-  const lw = odd ? box.h : box.w;
-  const lh = odd ? box.w : box.h;
+const GOLDEN = { aspect: PHI, eye: EYE };
+const logShapes = new Map();
+// Mirrors log_spiral() in vision/spiral_fit.py: starts where the golden arcs start, winds the same way, normalized to a box of height 1 set by the outer turn.
+export function logSpiral(growth) {
+  if (logShapes.has(growth)) return logShapes.get(growth);
+  const theta0 = Math.atan2(1 - EYE.y, -EYE.x);
+  const quarters = Math.min(40, Math.ceil(Math.log(200) / Math.log(growth)));
+  const raw = [];
+  for (let i = 0; i <= quarters * 32; i++) {
+    const t = (i / 32) * (Math.PI / 2);
+    const r = growth ** (-t / (Math.PI / 2));
+    raw.push({ x: r * Math.cos(theta0 + t), y: r * Math.sin(theta0 + t) });
+  }
+  const minX = Math.min(...raw.map((p) => p.x));
+  const minY = Math.min(...raw.map((p) => p.y));
+  const height = Math.max(...raw.map((p) => p.y)) - minY;
+  const shape = {
+    aspect: (Math.max(...raw.map((p) => p.x)) - minX) / height,
+    eye: { x: -minX / height, y: -minY / height },
+    points: raw.map((p) => ({ x: (p.x - minX) / height, y: (p.y - minY) / height })),
+  };
+  logShapes.set(growth, shape);
+  return shape;
+}
+export const shapeOf = (spiral) => (spiral.growth ? logSpiral(spiral.growth) : GOLDEN);
+// A spiral is { cx, cy, w, h, angle, flip, growth }: an unrotated w x h box around its center, turned by `angle` degrees; growth null means golden arcs.
+export function localMatrix(spiral) {
+  const { aspect } = shapeOf(spiral);
   const m = new DOMMatrix();
-  m.translateSelf(box.x + box.w / 2, box.y + box.h / 2);
-  m.rotateSelf(rotation * 90);
-  m.scaleSelf((flip ? -1 : 1) * (lw / PHI), lh);
-  m.translateSelf(-PHI / 2, -0.5);
+  m.translateSelf(spiral.cx, spiral.cy);
+  m.rotateSelf(spiral.angle);
+  m.scaleSelf((spiral.flip ? -1 : 1) * (spiral.w / aspect), spiral.h);
+  m.translateSelf(-aspect / 2, -0.5);
   return m;
 }
+// Turns an axis-aligned box plus 90° rotation steps (the composition layer) into a spiral.
+export function boxSpiral(box, rotation, flip) {
+  const odd = rotation % 2 === 1;
+  return { cx: box.x + box.w / 2, cy: box.y + box.h / 2, w: odd ? box.h : box.w, h: odd ? box.w : box.h, angle: rotation * 90, flip, growth: null };
+}
 export function eyePoint(spiral) {
-  const p = localMatrix(spiral.box, spiral.rotation, spiral.flip).transformPoint(new DOMPoint(EYE.x, EYE.y));
+  const { eye } = shapeOf(spiral);
+  const p = localMatrix(spiral).transformPoint(new DOMPoint(eye.x, eye.y));
+  return { x: p.x, y: p.y };
+}
+export function handlePoint(spiral) {
+  const p = localMatrix(spiral).transformPoint(new DOMPoint(shapeOf(spiral).aspect, 1));
   return { x: p.x, y: p.y };
 }
 // Builds the path under `matrix` but strokes in device space, so line width stays uniform even when the frame is stretched.
@@ -80,19 +113,20 @@ export function drawGrids(ctx, view, box, style) {
   if (style.phi) strokePath(ctx, view, (c) => gridLines(c, box, [1 / PHI ** 2, 1 / PHI]), style.color, width * 0.75, [6, 4]);
   ctx.restore();
 }
-// `spiral` is { box, rotation, flip }; style flags choose which parts are drawn.
+// Style flags choose which parts are drawn; squares only exist for the golden spiral.
 export function drawSpiral(ctx, view, spiral, style) {
-  const { box } = spiral;
+  const shape = shapeOf(spiral);
   const width = style.lineWidth * style.px;
-  const local = view.multiply(localMatrix(box, spiral.rotation, spiral.flip));
+  const local = view.multiply(localMatrix(spiral));
   prepare(ctx, style.opacity);
-  if (style.squares) {
+  if (style.squares && !spiral.growth) {
     ctx.globalAlpha = style.opacity * 0.55;
     strokePath(ctx, local, (c) => DRAW.steps.forEach(({ square: q }) => c.rect(q.x, q.y, q.s, q.s)), style.color, width * 0.6);
     ctx.globalAlpha = style.opacity;
   }
-  if (style.arcs !== false) strokePath(ctx, local, (c) => DRAW.steps.forEach(({ arc: a }) => c.arc(a.cx, a.cy, a.s, a.a0, a.a1)), style.color, width * 1.25);
-  if (style.frame) strokePath(ctx, view, (c) => c.rect(box.x, box.y, box.w, box.h), style.color, width * 0.6);
+  const curve = spiral.growth ? (c) => shape.points.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))) : (c) => DRAW.steps.forEach(({ arc: a }) => c.arc(a.cx, a.cy, a.s, a.a0, a.a1));
+  if (style.arcs !== false) strokePath(ctx, local, curve, style.color, width * 1.25);
+  if (style.frame) strokePath(ctx, local, (c) => c.rect(0, 0, shape.aspect, 1), style.color, width * 0.6);
   if (style.eye) {
     const e = view.transformPoint(eyePoint(spiral));
     ctx.beginPath();
@@ -108,7 +142,7 @@ export function drawSpiral(ctx, view, spiral, style) {
     ctx.fill();
   }
   if (style.handle) {
-    const h = view.transformPoint(new DOMPoint(box.x + box.w, box.y + box.h));
+    const h = view.transformPoint(handlePoint(spiral));
     const size = 7 * style.px;
     ctx.globalAlpha = 1;
     ctx.fillStyle = style.color;

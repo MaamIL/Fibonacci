@@ -18,8 +18,8 @@ A just-for-fun local web app: upload an image and find/trace Fibonacci and golde
 - `app/main.py` FastAPI app and routes (`/`, `/api/*`)
 - `app/__main__.py` entry point: `python -m app` starts the server and opens the browser
 - `app/fib/` pure Fibonacci math, no I/O
-- `app/vision/` OpenCV code: `spiral_fit.py` (auto-find golden spirals, POST `/api/find-spiral`); later phyllotaxis, golden crop
-- `app/static/` frontend: `index.html`, `css/`, `js/`
+- `app/vision/` OpenCV code: `spiral_fit.py` (auto-find golden and log spirals, POST `/api/find-spiral`), `crop.py` (saliency-based golden crop, POST `/api/golden-crop`)
+- `app/static/` frontend: `index.html` (spiral overlays, `/`), `crop.html` (golden crop, `/crop`), `sequence.html` (`/sequence`), `css/`, `js/`
 
 ## Commands (PowerShell, from project root)
 

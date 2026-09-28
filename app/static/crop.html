@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Golden Crop · Fibonacci Fun</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <span class="brand">Fibonacci Fun</span>
+      <nav class="nav">
+        <a href="/">Golden Ratio</a>
+        <a href="/crop" aria-current="page">Golden Crop</a>
+        <a href="/sequence">Sequence</a>
+      </nav>
+    </header>
+    <div class="workspace">
+      <aside class="panel">
+        <section class="group">
+          <h2>Image</h2>
+          <div class="with-info">
+            <label class="button primary file-button">
+              Choose image
+              <input id="file-input" type="file" accept="image/*" hidden />
+            </label>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Pick a photo from your computer. It is only sent to this local app, never online.">i</span>
+          </div>
+          <p class="hint">…or drop an image anywhere on the canvas.</p>
+        </section>
+        <details class="group" open>
+          <summary>Crop</summary>
+          <label class="field">
+            <span class="field-name">
+              Definition
+              <span
+                class="info"
+                tabindex="0"
+                role="button"
+                aria-label="More info"
+                data-tip="Where the subject should sit in the crop. These are photographers' rules of thumb, not strict laws; Auto tries all three and keeps the best fit.">
+                i
+              </span>
+            </span>
+            <select id="rule-select">
+              <option value="auto">Auto (best of all)</option>
+              <option value="phi">Dramatic · phi grid</option>
+              <option value="thirds">Interesting · rule of thirds</option>
+              <option value="spiral">Flowing · golden spiral</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-name">
+              Shape
+              <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="The crop's width to height. Golden 1 : 1.618 tries landscape and portrait and keeps the better one.">
+                i
+              </span>
+            </span>
+            <select id="aspect-select">
+              <option value="golden">Golden 1 : 1.618</option>
+              <option value="original">Keep original</option>
+              <option value="1:1">Square 1 : 1</option>
+              <option value="4:5">Portrait 4 : 5</option>
+              <option value="3:2">Classic 3 : 2</option>
+              <option value="16:9">Wide 16 : 9</option>
+            </select>
+          </label>
+          <p id="crop-info" class="hint"></p>
+        </details>
+        <details class="group" open>
+          <summary>Subject</summary>
+          <p id="subject-info" class="hint">The subject is found automatically. Click the photo to set it yourself.</p>
+          <div class="with-info">
+            <button id="reset-subject" type="button" disabled>Reset to automatic</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Go back to the automatic subject guess after you clicked one.">i</span>
+          </div>
+          <label class="toggle">
+            <input id="saliency-input" type="checkbox" disabled />
+            Show saliency map
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Brighter means more eye-catching. The automatic subject is the brightest area.">i</span>
+          </label>
+        </details>
+        <details class="group" open>
+          <summary>View</summary>
+          <div class="button-row">
+            <button id="before-button" type="button" disabled>Before</button>
+            <button id="after-button" type="button" disabled>After</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Before shows the original photo; After shows the cropped result.">i</span>
+          </div>
+          <label class="toggle">
+            <input id="guides-input" type="checkbox" checked />
+            Show guides
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Draw the chosen rule's lines or spiral over the cropped result (After view).">i</span>
+          </label>
+        </details>
+        <section class="group">
+          <div class="with-info">
+            <button id="export-button" type="button" class="primary" disabled>Download cropped PNG</button>
+            <span class="info" tabindex="0" role="button" aria-label="More info" data-tip="Saves just the cropped area at full resolution, without guides or markers.">i</span>
+          </div>
+        </section>
+        <section class="group hint">
+          <p>Click the photo to set the subject. In After view, drag to shift the crop.</p>
+        </section>
+      </aside>
+      <main id="stage" class="stage">
+        <canvas id="canvas" class="canvas" hidden></canvas>
+        <div id="empty-state" class="empty-state">
+          <p class="empty-title">Drop a photo here</p>
+          <p class="hint">It finds the subject and crops so it sits on a golden point.</p>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/static/js/tooltip.js"></script>
+    <script type="module" src="/static/js/crop-app.js"></script>
+  </body>
+</html>

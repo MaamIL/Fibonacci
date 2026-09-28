@@ -84,12 +84,39 @@ body {
 .group {
   margin-bottom: 1.25rem;
 }
-.group h2 {
+.group h2,
+.group > summary {
   margin: 0 0 0.5rem;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+}
+.group > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.group > summary::-webkit-details-marker {
+  display: none;
+}
+.group > summary::before {
+  content: "";
+  border-top: 0.25rem solid transparent;
+  border-bottom: 0.25rem solid transparent;
+  border-left: 0.35rem solid currentColor;
+  transition: transform 0.15s;
+}
+.group[open] > summary::before {
+  transform: rotate(90deg);
+}
+.group > summary:hover,
+.group > summary:focus-visible {
+  color: var(--accent);
+  outline: none;
 }
 .hint {
   margin: 0.4rem 0 0;
